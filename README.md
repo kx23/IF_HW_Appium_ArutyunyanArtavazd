@@ -1,207 +1,143 @@
 # Appium Mobile Test Framework
 
-Java 17 | Maven | JUnit 5 | Appium 9 | UiAutomator2 | Page Object
+Java 17 | Maven | JUnit 5 | Appium 8.6.0 | UiAutomator2 
 
 ---
 
-## 1. Установка окружения
+## 1. Стек и зависимости
 
-### 1.1 Java 17
-```bash
-# Windows — скачать с https://adoptium.net (Temurin JDK 17)
-# Проверить после установки:
-java -version   # должно быть: openjdk 17.x.x
-```
-
-### 1.2 Apache Maven
-```bash
-# Скачать с https://maven.apache.org/download.cgi
-# Распаковать, добавить bin/ в PATH
-mvn -version    # должно быть: Apache Maven 3.9.x
-```
-
-### 1.3 Node.js (нужен для Appium)
-```bash
-# Скачать LTS с https://nodejs.org
-node -v         # v18+ или v20+
-npm -v
-```
-
-### 1.4 Appium Server
-```bash
-# Установить глобально через npm
-npm install -g appium
-
-# Проверить
-appium -v       # должно быть: 2.x.x
-
-# Запустить сервер (оставить терминал открытым!)
-appium
-# Appium теперь слушает на http://127.0.0.1:4723
-```
-
-### 1.5 UiAutomator2 Driver
-```bash
-# Установить драйвер для Android
-appium driver install uiautomator2
-
-# Проверить установленные драйверы
-appium driver list --installed
-```
-
-### 1.6 Android Studio
-1. Скачать с https://developer.android.com/studio
-2. Установить, запустить **SDK Manager** (Tools → SDK Manager)
-3. Во вкладке **SDK Platforms** установить **Android 8.1 (API 27)**
-4. Во вкладке **SDK Tools** установить:
-   - Android SDK Build-Tools
-   - Android Emulator
-   - Android SDK Platform-Tools
-
-### 1.7 Переменные окружения
-```bash
-# Windows (через System Properties → Environment Variables)
-ANDROID_HOME = C:\Users\<твой_юзер>\AppData\Local\Android\Sdk
-JAVA_HOME    = C:\Program Files\Eclipse Adoptium\jdk-17.x.x
-
-# Добавить в PATH:
-%ANDROID_HOME%\tools
-%ANDROID_HOME%\platform-tools
-```
-
-### 1.8 Appium Inspector (опционально, для инспекции элементов)
-- Скачать последний релиз: https://github.com/appium/appium-inspector/releases
-- Установить .exe (Windows) / .dmg (Mac)
+| Зависимость | Версия | Назначение |
+|---|---|---|
+| `io.appium:java-client` | 8.6.0 | Appium Java Client, AndroidDriver |
+| `org.seleniumhq.selenium:selenium-java` | 4.13.0 | WebDriver API, PageFactory |
+| `org.junit.jupiter:junit-jupiter-api` | 5.10.2 | JUnit 5 аннотации и assertions |
+| `org.junit.jupiter:junit-jupiter-engine` | 5.10.2 | JUnit 5 движок запуска |
+| `org.junit.jupiter:junit-jupiter-params` | 5.10.2 | Параметризованные тесты |
+| `org.aeonbits.owner:owner` | 1.0.12 | Типобезопасное чтение конфигурации |
+| `org.slf4j:slf4j-api` | 2.0.13 | Логирование API |
+| `ch.qos.logback:logback-classic` | 1.5.6 | Реализация логирования |
 
 ---
 
-## 2. Создание эмулятора Pixel 2 API 27
+## 2. Структура проекта
+```
 
-1. Открыть Android Studio → **AVD Manager** (Tools → Device Manager)
+src/
+├── main/java/
+│   ├── driver/
+│   │   └── DriverManager.java        создание AndroidDriver, ThreadLocal, implicit wait
+│   ├── pages/
+│   │   ├── BasePage.java             
+│   │   ├── OnboardingPage.java      
+│   │   ├── MainPage.java             
+│   │   ├── SearchPage.java           
+│   │   └── ArticlePage.java          
+│   └── utils/
+│       ├── AppConfig.java            интерфейс Owner с маппингом ключей конфига
+│       └── ConfigProvider.java       singleton-фабрика экземпляра AppConfig
+└── test/
+├── java/com/example/tests/
+│   ├── BaseTest.java             @BeforeEach / @AfterEach, инициализация mainPage
+│   └── SearchTest.java           тесты 
+└── resources/
+├── config.properties         параметры подключения и capabilities
+├── logback-test.xml          настройки логирования
+└── wikipedia.apk             APK тестируемого приложения
+```
+
+---
+
+## 3. Конфигурация
+
+Все параметры хранятся в `src/test/resources/config.properties`.
+
+Для доступа к конфигурации используется библиотека **Owner (aeonbits)**:
+- `AppConfig` — интерфейс с типизированными методами, каждый метод маппится на ключ через `@Key`
+- `ConfigProvider` — хранит статический singleton экземпляр `AppConfig`, созданный через `ConfigFactory`
+
+Параметры конфигурации:
+
+| Ключ | Описание | Пример |
+|---|---|---|
+| `appium.server.url` | URL запущенного Appium сервера | `http://127.0.0.1:4723` |
+| `android.device.name` | Имя AVD эмулятора | `Pixel_5_API_30` |
+| `android.platform.name` | Платформа | `Android` |
+| `android.platform.version` | Версия Android | `11.0` |
+| `android.automation.name` | Драйвер автоматизации | `UiAutomator2` |
+| `android.app.name` | Имя APK-файла в ресурсах | `wikipedia.apk` |
+| `android.app.package` | Package тестируемого приложения | `org.wikipedia` |
+| `android.app.activity` | Стартовая Activity | `org.wikipedia.main.MainActivity` |
+| `driver.implicit.wait` | Неявное ожидание (сек) | `10` |
+| `driver.new.command.timeout` | Таймаут команды (сек) | `60` |
+
+---
+
+## 4. Создание эмулятора
+
+1. Открыть Android Studio → **Device Manager** (правая панель или Tools → Device Manager)
 2. Нажать **Create Virtual Device**
-3. Выбрать **Pixel 2** → Next
-4. Выбрать **API 27 (Android 8.1 Oreo)** → Next (скачать образ если нет)
-5. Имя: `Pixel_2_API_27` → Finish
-6. Запустить эмулятор (кнопка ▶)
-7. Проверить, что устройство подключено:
-   ```bash
-   adb devices
-   # Должно появиться: emulator-5554  device
-   ```
-
----
-
-## 3. Добавление APK в проект
-
-Скачай тестовое приложение Wikipedia APK:
-- https://github.com/wikimedia/apps-android-wikipedia/releases
-- Рекомендуемая версия: **2.7.50406-r-2022-01-14**
-
-Положи файл в:
-```
-src/test/resources/wikipedia.apk
-```
-
-> ⚠️ Убедись, что имя файла совпадает с `android.app.name` в `config.properties`
-
----
-
-## 4. Запуск тестов
-
+3. Выбрать **Pixel 5** → Next
+4. Выбрать образ **API 30 (Android 11.0)** — скачать если нет → Next
+5. Имя устройства: `Pixel_5_API_30` → Finish
+6. Запустить эмулятор кнопкой ▶
+7. Убедиться, что устройство видно:
 ```bash
-# 1. Убедись, что запущены:
-#    - Appium Server (appium)
-#    - Android эмулятор
+adb devices
+# emulator-5554   device
+```
+ 
+---
 
-# 2. Перейди в корень проекта
-cd appium-mobile-framework
+## 5. Запуск Appium Inspector
 
-# 3. Запусти все тесты
+1. Скачать последний релиз: https://github.com/appium/appium-inspector/releases
+2. Запустить Appium сервер в терминале:
+```bash
+appium --allow-cors
+```
+3. Открыть Appium Inspector, указать параметры подключения:
+   | Поле | Значение |
+   |---|---|
+   | Remote Host | `127.0.0.1` |
+   | Remote Port | `4723` |
+   | Remote Path | *(оставить пустым)* |
+
+4. Вставить Capabilities во вкладке JSON:
+```json
+{
+  "platformName": "Android",
+  "appium:deviceName": "Pixel_5_API_30",
+  "appium:platformVersion": "11.0",
+  "appium:automationName": "UiAutomator2",
+  "appium:appPackage": "org.wikipedia",
+  "appium:appActivity": "org.wikipedia.main.MainActivity",
+  "appium:noReset": true
+}
+```
+5. Нажать **Start Session** — откроется зеркало эмулятора
+---
+
+## 6. Запуск тестов
+
+Перед запуском убедиться, что активны:
+- Appium сервер: `appium --allow-cors`
+- Android эмулятор (`adb devices` показывает устройство)
+- apk файл находится в папке src/test/resources/
+```bash
+# Все тесты
 mvn test
-
-# 4. Запустить конкретный тест
+ 
+# Конкретный тест
 mvn test -Dtest=SearchTest#searchJavaFirstResultContainsJava
-
-# 5. Запустить только smoke-тест
-mvn test -Dtest=SearchTest#smokeMainScreenLoaded
 ```
-
+ 
 ---
 
-## 5. Структура проекта
+## 7. Тесты
 
-```
-appium-mobile-framework/
-├── pom.xml
-└── src/
-    └── test/
-        ├── java/
-        │   └── com/example/
-        │       ├── driver/
-        │       │   └── DriverManager.java       ← создание AndroidDriver
-        │       ├── pages/
-        │       │   ├── BasePage.java             ← базовый PageObject
-        │       │   ├── OnboardingPage.java        ← экран приветствия
-        │       │   ├── MainPage.java             ← главный экран
-        │       │   ├── SearchPage.java           ← экран поиска
-        │       │   └── ArticlePage.java          ← страница статьи
-        │       ├── tests/
-        │       │   ├── BaseTest.java             ← @BeforeEach/@AfterEach
-        │       │   └── SearchTest.java           ← тесты поиска
-        │       └── utils/
-        │           └── ConfigReader.java         ← чтение config.properties
-        └── resources/
-            ├── config.properties                 ← capabilities и таймауты
-            ├── logback-test.xml                  ← настройки логирования
-            └── wikipedia.apk                     ← APK (положить вручную!)
-```
-
----
-
-## 6. Тесты
-
-| Тест | Описание |
-|------|----------|
-| `smokeMainScreenLoaded` | Проверяет, что главный экран отображается после запуска |
+| Метод | Описание |
+|---|---|
+| `smokeMainScreenLoaded` | Главный экран отображается после запуска приложения |
 | `searchJavaFirstResultContainsJava` | Вводит "Java" в поиск, проверяет что первый результат содержит "Java" |
-| `searchAppiumHasResults` | Проверяет, что поиск "Appium" возвращает результаты |
-| `searchJavaOpenFirstArticle` | Открывает первую статью из поиска "Java" и проверяет её заголовок |
-
----
-
-## 7. Диагностика проблем
-
-### Appium не подключается
-```bash
-# Проверь, что сервер запущен
-appium
-# Убедись что URL в config.properties: appium.server.url=http://127.0.0.1:4723
-```
-
-### Эмулятор не найден
-```bash
-adb devices                    # список устройств
-adb kill-server && adb start-server   # перезапустить ADB
-```
-
-### Элементы не находятся
-- Открой **Appium Inspector**
-- Подключись к запущенной сессии или создай новую
-- Проверь актуальные resource-id элементов в твоей версии APK
-- Обнови локаторы в соответствующем Page Object
-
-### Несовпадение версий APK
-- Проверь `android.app.package` и `android.app.activity` в `config.properties`
-- Узнать activity: `adb shell dumpsys package org.wikipedia | grep -i activity`
-
----
-
-## 8. Как обновить локаторы под свою версию APK
-
-Разные версии Wikipedia могут иметь разные `resource-id`. 
-
-Алгоритм:
-1. Запусти Appium Inspector
-2. Capabilities: такие же, как в `config.properties`
-3. Найди нужный элемент через Inspector
-4. Скопируй `resource-id` → обнови `@AndroidFindBy(id = "...")` в PageObject
+| `searchAppiumHasResults` | Поиск "Appium" возвращает хотя бы один результат |
+| `searchJavaOpenFirstArticle` | Открывает первую статью из поиска "Java", проверяет заголовок |
