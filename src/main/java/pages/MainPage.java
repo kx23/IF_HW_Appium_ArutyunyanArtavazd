@@ -12,10 +12,6 @@ public class MainPage extends BasePage<MainPage> {
     @AndroidFindBy(id = "org.wikipedia:id/search_container")
     private WebElement searchContainer;
 
-    @AndroidFindBy(accessibility = "Search Wikipedia")
-    private WebElement searchToolbarButton;
-
-
     public boolean isDisplayed() {
         try {
             return searchContainer.isDisplayed();

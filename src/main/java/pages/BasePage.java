@@ -31,19 +31,10 @@ public abstract class BasePage<T extends BasePage<T>> {
         log.debug("PageObject инициализирован: {}", getClass().getSimpleName());
     }
 
-    @SuppressWarnings("unchecked")
     protected T self() {
         return (T) this;
     }
     protected void waitUntilVisible(WebElement element) {
         wait.until(ExpectedConditions.visibilityOf(element));
-    }
-
-    protected void waitUntilClickable(WebElement element) {
-        wait.until(ExpectedConditions.elementToBeClickable(element));
-    }
-
-    protected void waitUntilDisplayed(WebElement element) {
-        wait.until(driver -> element.isDisplayed());
     }
 }

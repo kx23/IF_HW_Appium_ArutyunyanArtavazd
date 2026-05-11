@@ -20,9 +20,4 @@ public class ArticlePage extends BasePage<ArticlePage> {
         String title = articleTitle.getText();
         return title;
     }
-
-    public SearchPage goBack() {
-        backButton.click();
-        return new SearchPage();
-    }
 }

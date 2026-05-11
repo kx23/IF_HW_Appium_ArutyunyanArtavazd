@@ -8,14 +8,6 @@ public class OnboardingPage extends BasePage<OnboardingPage> {
     @AndroidFindBy(id = "org.wikipedia:id/fragment_onboarding_skip_button")
     private WebElement skipButton;
 
-    @AndroidFindBy(id = "org.wikipedia:id/fragment_onboarding_forward_button")
-    private WebElement continueButton;
-
-    @AndroidFindBy(id = "org.wikipedia:id/fragment_onboarding_done_button")
-    private WebElement getStartedButton;
-
-    // -------------------------------------------------------------------------
-
     public boolean isOnboardingDisplayed() {
         try {
             return skipButton.isDisplayed();

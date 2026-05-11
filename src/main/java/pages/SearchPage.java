@@ -37,12 +37,6 @@ public class SearchPage extends BasePage<SearchPage> {
         return title;
     }
 
-    public String getFirstResultDescription() {
-        if (resultDescriptions.isEmpty()) {
-            return "";
-        }
-        return resultDescriptions.get(0).getText();
-    }
     public int getResultsCount() {
         return resultTitles.size();
     }
