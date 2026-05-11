@@ -1,5 +1,3 @@
-package com.example.tests;
-
 import pages.SearchPage;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

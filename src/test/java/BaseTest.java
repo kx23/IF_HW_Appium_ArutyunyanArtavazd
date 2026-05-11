@@ -1,5 +1,3 @@
-package com.example.tests;
-
 import driver.DriverManager;
 import pages.MainPage;
 import pages.OnboardingPage;

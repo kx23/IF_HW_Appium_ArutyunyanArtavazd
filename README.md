@@ -1,6 +1,6 @@
 # Appium Mobile Test Framework
 
-Java 17 | Maven | JUnit 5 | Appium 8.6.0 | UiAutomator2 
+Java 17 | Maven | JUnit 5 | Appium 8.6.0 | UiAutomator2
 
 ---
 
@@ -20,36 +20,38 @@ Java 17 | Maven | JUnit 5 | Appium 8.6.0 | UiAutomator2
 ---
 
 ## 2. Структура проекта
-```
 
+```
 src/
-├── main/java/
-│   ├── driver/
-│   │   └── DriverManager.java        создание AndroidDriver, ThreadLocal, implicit wait
-│   ├── pages/
-│   │   ├── BasePage.java             
-│   │   ├── OnboardingPage.java      
-│   │   ├── MainPage.java             
-│   │   ├── SearchPage.java           
-│   │   └── ArticlePage.java          
-│   └── utils/
-│       ├── AppConfig.java            интерфейс Owner с маппингом ключей конфига
-│       └── ConfigProvider.java       singleton-фабрика экземпляра AppConfig
+├── main/
+│   ├── java/
+│   │   ├── driver/
+│   │   │   └── DriverManager.java       # Управление экземпляром AppiumDriver
+│   │   ├── pages/
+│   │   │   ├── BasePage.java            # Базовый Page Object (общие методы)
+│   │   │   ├── OnboardingPage.java      # Экран онбординга при первом запуске
+│   │   │   ├── MainPage.java            # Главный экран приложения
+│   │   │   ├── SearchPage.java          # Экран поиска статей
+│   │   │   └── ArticlePage.java         # Экран просмотра статьи
+│   │   └── utils/
+│   │       ├── AppConfig.java           # Интерфейс конфигурации (Owner)
+│   │       └── ConfigProvider.java      # Провайдер/фабрика конфигурации
+│   └── resources/
+│       ├── config.properties            # Параметры подключения и capabilities
+│       └── logback.xml                  # Настройки логирования
 └── test/
-├── java/com/example/tests/
-│   ├── BaseTest.java             @BeforeEach / @AfterEach, инициализация mainPage
-│   └── SearchTest.java           тесты 
-└── resources/
-├── config.properties         параметры подключения и capabilities
-├── logback-test.xml          настройки логирования
-└── wikipedia.apk             APK тестируемого приложения
+    ├── java/
+    │   ├── BaseTest.java                # Базовый тест: setUp / tearDown
+    │   └── SearchTest.java             # Тесты поиска статей
+    └── resources/
+        └── wikipedia.apk               # APK-файл тестируемого приложения
 ```
 
 ---
 
 ## 3. Конфигурация
 
-Все параметры хранятся в `src/test/resources/config.properties`.
+Все параметры хранятся в `src/main/resources/config.properties`.
 
 Для доступа к конфигурации используется библиотека **Owner (aeonbits)**:
 - `AppConfig` — интерфейс с типизированными методами, каждый метод маппится на ключ через `@Key`
@@ -85,7 +87,7 @@ src/
 adb devices
 # emulator-5554   device
 ```
- 
+
 ---
 
 ## 5. Запуск Appium Inspector
@@ -96,25 +98,28 @@ adb devices
 appium --allow-cors
 ```
 3. Открыть Appium Inspector, указать параметры подключения:
+
    | Поле | Значение |
-   |---|---|
+      |---|---|
    | Remote Host | `127.0.0.1` |
    | Remote Port | `4723` |
    | Remote Path | *(оставить пустым)* |
 
-4. Вставить Capabilities во вкладке JSON:
+4. Вставить Capabilities во вкладке JSON, указав абсолютный путь до APK:
 ```json
 {
   "platformName": "Android",
   "appium:deviceName": "Pixel_5_API_30",
-  "appium:platformVersion": "11.0",
   "appium:automationName": "UiAutomator2",
+  "appium:app": "C:\\путь\\до\\проекта\\src\\test\\resources\\wikipedia.apk",
   "appium:appPackage": "org.wikipedia",
   "appium:appActivity": "org.wikipedia.main.MainActivity",
   "appium:noReset": true
 }
 ```
 5. Нажать **Start Session** — откроется зеркало эмулятора
+6. Кликнуть на любой элемент → справа отобразятся его атрибуты, в том числе `resource-id` для `@AndroidFindBy`
+
 ---
 
 ## 6. Запуск тестов
@@ -122,15 +127,17 @@ appium --allow-cors
 Перед запуском убедиться, что активны:
 - Appium сервер: `appium --allow-cors`
 - Android эмулятор (`adb devices` показывает устройство)
-- apk файл находится в папке src/test/resources/
+- APK файл находится в `src/test/resources/`
+- В Capabilities внутри Appium Inspector указан абсолютный путь до APK
+
 ```bash
 # Все тесты
 mvn test
- 
+
 # Конкретный тест
 mvn test -Dtest=SearchTest#searchJavaFirstResultContainsJava
 ```
- 
+
 ---
 
 ## 7. Тесты
